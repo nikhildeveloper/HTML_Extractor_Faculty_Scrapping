@@ -26,10 +26,10 @@ jobs:
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping .
+        run: docker build -t nikhilsaijaddu/html_extractor_faculty_scrapping .
 
       - name: Publish Image to docker hub
-        run: docker push nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
+        run: docker push nikhilsaijaddu/html_extractor_faculty_scrapping:latest
 
   deploy:
     needs: build
@@ -55,12 +55,12 @@ jobs:
           echo "✅ EC2 Private IP: $PRIVATE_IP"
 
       - name: Pull image from docker hub
-        run: docker pull nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
+        run: docker pull nikhilsaijaddu/html_extractor_faculty_scrapping:latest
 
       - name: Stop and remove old container
         run: |
-          docker stop HTML_Extractor_Faculty_Scrapping || true
-          docker rm HTML_Extractor_Faculty_Scrapping || true
+          docker stop html_extractor_faculty_scrapping || true
+          docker rm html_extractor_faculty_scrapping || true
 
       - name: Run Docker container
-        run: docker run -d --name HTML_Extractor_Faculty_Scrapping -p 8000:8000 -e REDIS_HOST="${{ steps.get_ip.outputs.redis_host }}" -e REDIS_PORT="6379" -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" --restart unless-stopped nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
+        run: docker run -d --name html_extractor_faculty_scrapping -p 8000:8000 -e REDIS_HOST="${{ steps.get_ip.outputs.redis_host }}" -e REDIS_PORT="6379" -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" --restart unless-stopped nikhilsaijaddu/html_extractor_faculty_scrapping:latest
