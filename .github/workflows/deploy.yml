@@ -90,7 +90,6 @@ jobs:
             -e REDIS_PORT="6379" \
             -e REDIS_DB="0" \
             -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" \
-            -e HTML_EXTRACTOR_API_URL="http://98.92.28.21:8000" \
             --restart unless-stopped \
             nikhilsaijaddu/html_extractor_faculty_scrapping:latest
 
