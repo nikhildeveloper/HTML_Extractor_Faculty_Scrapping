@@ -63,12 +63,13 @@ jobs:
           sleep 2
           redis-cli ping || echo "Redis check"
 
-      - name: Get EC2 private IP
+      - name: Get Redis host IP
         id: get_ip
         run: |
-          PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-          echo "redis_host=$PRIVATE_IP" >> $GITHUB_OUTPUT
-          echo "✅ EC2 Private IP: $PRIVATE_IP"
+          # Use Docker bridge gateway IP - this allows containers to reach services on the host
+          REDIS_HOST="172.17.0.1"
+          echo "redis_host=$REDIS_HOST" >> $GITHUB_OUTPUT
+          echo "✅ Using Docker bridge gateway for Redis: $REDIS_HOST"
 
       - name: Pull image from docker hub
         run: docker pull nikhilsaijaddu/html_extractor_faculty_scrapping:latest
@@ -80,16 +81,12 @@ jobs:
 
       - name: Run Docker container
         run: |
-          PRIVATE_IP="${{ steps.get_ip.outputs.redis_host }}"
-          if [ -z "$PRIVATE_IP" ]; then
-            echo "❌ Failed to get EC2 private IP"
-            exit 1
-          fi
-          echo "🚀 Starting container with REDIS_HOST=$PRIVATE_IP"
+          REDIS_HOST="${{ steps.get_ip.outputs.redis_host }}"
+          echo "🚀 Starting container with REDIS_HOST=$REDIS_HOST"
           docker run -d \
             --name html_extractor_faculty_scrapping \
             -p 8000:8000 \
-            -e REDIS_HOST="$PRIVATE_IP" \
+            -e REDIS_HOST="$REDIS_HOST" \
             -e REDIS_PORT="6379" \
             -e REDIS_DB="0" \
             -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" \

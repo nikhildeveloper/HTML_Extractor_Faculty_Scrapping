@@ -6,13 +6,9 @@ set -e
 
 echo "🔧 Fixing HTML Extractor container..."
 
-# Get EC2 private IP
-PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
-if [ -z "$PRIVATE_IP" ]; then
-    echo "❌ Failed to get EC2 private IP"
-    exit 1
-fi
-echo "✅ EC2 Private IP: $PRIVATE_IP"
+# Use Docker bridge gateway IP - this allows containers to reach services on the host
+REDIS_HOST="172.17.0.1"
+echo "✅ Using Docker bridge gateway for Redis: $REDIS_HOST"
 
 # Check if MongoDB URI is provided
 if [ -z "$MONGO_ATLAS_URI" ]; then
@@ -67,7 +63,7 @@ echo "🚀 Starting container with correct environment variables..."
 docker run -d \
   --name html_extractor_faculty_scrapping \
   -p 8000:8000 \
-  -e REDIS_HOST="$PRIVATE_IP" \
+  -e REDIS_HOST="$REDIS_HOST" \
   -e REDIS_PORT="6379" \
   -e REDIS_DB="0" \
   -e MONGO_ATLAS_URI="$MONGO_ATLAS_URI" \
@@ -97,7 +93,9 @@ if docker ps | grep -q html_extractor_faculty_scrapping; then
     
     echo ""
     echo "✅ Container fixed and running!"
-    echo "🌐 API should be available at: http://$(curl -s http://169.254.169.254/latest/meta-data/public-ipv4):8000"
+    # Try to get public IP, but don't fail if it's not available
+    PUBLIC_IP=$(curl -s --max-time 2 http://169.254.169.254/latest/meta-data/public-ipv4 2>/dev/null || echo "your-ec2-public-ip")
+    echo "🌐 API should be available at: http://${PUBLIC_IP}:8000"
 else
     echo "❌ Container failed to start"
     echo "📋 Container logs:"
