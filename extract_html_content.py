@@ -1063,7 +1063,7 @@ def extract_all_pages_recursive(start_url, use_js=True, wait_time=5, selector=No
     if has_pagination:
         print(f"   Will extract up to {max_pages} page(s) as specified by user\n")
     else:
-    print(f"   Will automatically follow all pagination links until the end\n")
+        print(f"   Will automatically follow all pagination links until the end\n")
     
     # Check cancellation and update progress via Redis if job_id is provided
     cancellation_check = None
