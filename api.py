@@ -33,9 +33,13 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # Initialize Redis (local on EC2)
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
-REDIS_DB = int(os.getenv("REDIS_DB", 0))
+REDIS_HOST = os.getenv("REDIS_HOST")
+if not REDIS_HOST:
+    print("❌ REDIS_HOST not set in environment variables")
+    print("   Set it in .env file or environment")
+    sys.exit(1)
+REDIS_PORT = int(os.getenv("REDIS_PORT", "6379"))
+REDIS_DB = int(os.getenv("REDIS_DB", "0"))
 
 try:
     redis_client = redis.Redis(

@@ -439,7 +439,7 @@ def extract_with_js_pagination(start_url, wait_time=5, selector=None, include_li
     if has_pagination:
         print(f"   Will extract up to {max_pages} page(s) as specified by user\n")
     else:
-        print(f"   Will click 'Next Page' buttons until all content is loaded\n")
+    print(f"   Will click 'Next Page' buttons until all content is loaded\n")
     
     all_text_parts = []
     page_count = 0
@@ -454,9 +454,11 @@ def extract_with_js_pagination(start_url, wait_time=5, selector=None, include_li
             import redis
             import json
             import os
-            redis_host = os.getenv("REDIS_HOST", "localhost")
-            redis_port = int(os.getenv("REDIS_PORT", 6379))
-            redis_db = int(os.getenv("REDIS_DB", 0))
+            redis_host = os.getenv("REDIS_HOST")
+            if not redis_host:
+                raise ValueError("REDIS_HOST environment variable is required")
+            redis_port = int(os.getenv("REDIS_PORT", "6379"))
+            redis_db = int(os.getenv("REDIS_DB", "0"))
             redis_client = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
             
             def check_cancelled():
@@ -1061,7 +1063,7 @@ def extract_all_pages_recursive(start_url, use_js=True, wait_time=5, selector=No
     if has_pagination:
         print(f"   Will extract up to {max_pages} page(s) as specified by user\n")
     else:
-        print(f"   Will automatically follow all pagination links until the end\n")
+    print(f"   Will automatically follow all pagination links until the end\n")
     
     # Check cancellation and update progress via Redis if job_id is provided
     cancellation_check = None
@@ -1071,9 +1073,11 @@ def extract_all_pages_recursive(start_url, use_js=True, wait_time=5, selector=No
             import redis
             import json
             import os
-            redis_host = os.getenv("REDIS_HOST", "localhost")
-            redis_port = int(os.getenv("REDIS_PORT", 6379))
-            redis_db = int(os.getenv("REDIS_DB", 0))
+            redis_host = os.getenv("REDIS_HOST")
+            if not redis_host:
+                raise ValueError("REDIS_HOST environment variable is required")
+            redis_port = int(os.getenv("REDIS_PORT", "6379"))
+            redis_db = int(os.getenv("REDIS_DB", "0"))
             redis_client = redis.Redis(host=redis_host, port=redis_port, db=redis_db, decode_responses=True)
             
             def check_cancelled():

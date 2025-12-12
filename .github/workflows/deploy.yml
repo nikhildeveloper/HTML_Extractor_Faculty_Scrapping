@@ -9,117 +9,62 @@ on:
       - 'html_extractor/**'
   workflow_dispatch:
 
-env:
-  REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}/html-extractor
-
 jobs:
-  build-and-push:
+  build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout Source
         uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libnss3 \
-            libnspr4 \
-            libatk1.0-0 \
-            libatk-bridge2.0-0 \
-            libcups2 \
-            libdrm2 \
-            libdbus-1-3 \
-            libxkbcommon0 \
-            libxcomposite1 \
-            libxdamage1 \
-            libxfixes3 \
-            libxrandr2 \
-            libgbm1 \
-            libasound2 \
-            libpango-1.0-0 \
-            libcairo2 \
-            libatspi2.0-0 \
-            libxshmfence1
-
-      - name: Install Python dependencies
+      - name: Validate Python syntax
         working-directory: ./html_extractor
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements_api.txt
+          python3 -m py_compile api.py extract_html_content.py || echo "Syntax check passed"
 
-      - name: Install Playwright browsers
-        working-directory: ./html_extractor
-        run: |
-          playwright install chromium
-          playwright install-deps chromium
+      - name: Login to docker hub
+        run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Validate API syntax
-        working-directory: ./html_extractor
-        run: |
-          python -m py_compile api.py extract_html_content.py || echo "Syntax check passed"
+      - name: Build Docker image
+        run: docker build -t nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping ./html_extractor
 
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
-        with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Extract metadata
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
-          tags: |
-            type=ref,event=branch
-            type=ref,event=pr
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha,prefix={{branch}}-
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./html_extractor
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+      - name: Publish Image to docker hub
+        run: docker push nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
 
   deploy:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-    
+    needs: build
+    runs-on: self-hosted
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Install and configure Redis
+        run: |
+          sudo apt update
+          sudo apt install -y redis-server || true
+          # Configure Redis to accept connections from Docker containers
+          sudo sed -i 's/bind 127.0.0.1 ::1/bind 0.0.0.0/' /etc/redis/redis.conf || true
+          sudo sed -i 's/supervised no/supervised systemd/' /etc/redis/redis.conf || true
+          sudo sed -i 's/protected-mode yes/protected-mode no/' /etc/redis/redis.conf || true
+          sudo systemctl restart redis-server || true
+          sudo systemctl enable redis-server || true
+          redis-cli ping || echo "Redis check"
 
-      - name: Deploy to server
-        uses: appleboy/ssh-action@v1.0.0
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            cd ~/html_extractor
-            git pull origin main || git pull origin master
-            source venv/bin/activate
-            pip install -r requirements_api.txt
-            playwright install chromium
-            sudo systemctl restart html-extractor-api || echo "Service not configured, skipping restart"
-            echo "✅ Deployment complete"
+      - name: Get EC2 private IP
+        id: get_ip
+        run: |
+          PRIVATE_IP=$(curl -s http://169.254.169.254/latest/meta-data/local-ipv4)
+          echo "redis_host=$PRIVATE_IP" >> $GITHUB_OUTPUT
+          echo "✅ EC2 Private IP: $PRIVATE_IP"
+
+      - name: Pull image from docker hub
+        run: docker pull nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
+
+      - name: Stop and remove old container
+        run: |
+          docker stop HTML_Extractor_Faculty_Scrapping || true
+          docker rm HTML_Extractor_Faculty_Scrapping || true
+
+      - name: Run Docker container
+        run: docker run -d --name HTML_Extractor_Faculty_Scrapping -p 8000:8000 -e REDIS_HOST="${{ steps.get_ip.outputs.redis_host }}" -e REDIS_PORT="6379" -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" --restart unless-stopped nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
 
