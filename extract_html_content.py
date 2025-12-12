@@ -439,7 +439,7 @@ def extract_with_js_pagination(start_url, wait_time=5, selector=None, include_li
     if has_pagination:
         print(f"   Will extract up to {max_pages} page(s) as specified by user\n")
     else:
-    print(f"   Will click 'Next Page' buttons until all content is loaded\n")
+        print(f"   Will click 'Next Page' buttons until all content is loaded\n")
     
     all_text_parts = []
     page_count = 0
