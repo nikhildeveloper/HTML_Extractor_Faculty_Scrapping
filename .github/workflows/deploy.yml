@@ -34,17 +34,33 @@ jobs:
   deploy:
     needs: build
     runs-on: self-hosted
+    env:
+      DEBIAN_FRONTEND: noninteractive
+      APT_LISTCHANGES_FRONTEND: none
+      UCF_FORCE_CONFFNEW: 1
     steps:
       - name: Install and configure Redis
+        env:
+          DEBIAN_FRONTEND: noninteractive
+          APT_LISTCHANGES_FRONTEND: none
         run: |
+          export DEBIAN_FRONTEND=noninteractive
+          export APT_LISTCHANGES_FRONTEND=none
           sudo apt update
-          sudo apt install -y redis-server || true
+          sudo apt install -y redis-server
+          
           # Configure Redis to accept connections from Docker containers
           sudo sed -i 's/bind 127.0.0.1 ::1/bind 0.0.0.0/' /etc/redis/redis.conf || true
           sudo sed -i 's/supervised no/supervised systemd/' /etc/redis/redis.conf || true
           sudo sed -i 's/protected-mode yes/protected-mode no/' /etc/redis/redis.conf || true
+          
+          # Restart Redis
+          sudo systemctl daemon-reload || true
           sudo systemctl restart redis-server || true
           sudo systemctl enable redis-server || true
+          
+          # Wait a moment and test Redis
+          sleep 2
           redis-cli ping || echo "Redis check"
 
       - name: Get EC2 private IP
