@@ -27,7 +27,6 @@ from bson import ObjectId
 from extract_html_content import (
     extract_all_pages_recursive
 )
-
 # Load environment variables
 from dotenv import load_dotenv
 load_dotenv()
