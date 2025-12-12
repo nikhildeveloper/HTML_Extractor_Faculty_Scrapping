@@ -79,4 +79,45 @@ jobs:
           docker rm html_extractor_faculty_scrapping || true
 
       - name: Run Docker container
-        run: docker run -d --name html_extractor_faculty_scrapping -p 8000:8000 -e REDIS_HOST="${{ steps.get_ip.outputs.redis_host }}" -e REDIS_PORT="6379" -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" --restart unless-stopped nikhilsaijaddu/html_extractor_faculty_scrapping:latest
+        run: |
+          PRIVATE_IP="${{ steps.get_ip.outputs.redis_host }}"
+          if [ -z "$PRIVATE_IP" ]; then
+            echo "❌ Failed to get EC2 private IP"
+            exit 1
+          fi
+          echo "🚀 Starting container with REDIS_HOST=$PRIVATE_IP"
+          docker run -d \
+            --name html_extractor_faculty_scrapping \
+            -p 8000:8000 \
+            -e REDIS_HOST="$PRIVATE_IP" \
+            -e REDIS_PORT="6379" \
+            -e REDIS_DB="0" \
+            -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" \
+            --restart unless-stopped \
+            nikhilsaijaddu/html_extractor_faculty_scrapping:latest
+
+      - name: Verify container environment
+        run: |
+          echo "🔍 Verifying container environment variables..."
+          sleep 3
+          REDIS_HOST=$(docker exec html_extractor_faculty_scrapping printenv REDIS_HOST || echo "")
+          if [ -z "$REDIS_HOST" ]; then
+            echo "❌ REDIS_HOST not set in container!"
+            docker logs html_extractor_faculty_scrapping --tail 20
+            exit 1
+          else
+            echo "✅ REDIS_HOST is set to: $REDIS_HOST"
+          fi
+
+      - name: Check container health
+        run: |
+          echo "🏥 Checking container health..."
+          sleep 5
+          if docker ps | grep -q html_extractor_faculty_scrapping; then
+            echo "✅ Container is running"
+            docker logs html_extractor_faculty_scrapping --tail 30
+          else
+            echo "❌ Container is not running!"
+            docker logs html_extractor_faculty_scrapping --tail 50
+            exit 1
+          fi
