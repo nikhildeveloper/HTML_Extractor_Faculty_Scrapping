@@ -19,7 +19,6 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Validate Python syntax
-        working-directory: ./html_extractor
         run: |
           python3 -m py_compile api.py extract_html_content.py || echo "Syntax check passed"
 
@@ -27,7 +26,7 @@ jobs:
         run: docker login -u ${{ secrets.DOCKER_USERNAME }} -p ${{ secrets.DOCKER_PASSWORD }}
 
       - name: Build Docker image
-        run: docker build -t nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping ./html_extractor
+        run: docker build -t nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping .
 
       - name: Publish Image to docker hub
         run: docker push nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
@@ -65,4 +64,3 @@ jobs:
 
       - name: Run Docker container
         run: docker run -d --name HTML_Extractor_Faculty_Scrapping -p 8000:8000 -e REDIS_HOST="${{ steps.get_ip.outputs.redis_host }}" -e REDIS_PORT="6379" -e MONGO_ATLAS_URI="${{ secrets.MONGO_ATLAS_URI }}" --restart unless-stopped nikhilsaijaddu/HTML_Extractor_Faculty_Scrapping:latest
-
