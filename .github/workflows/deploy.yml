@@ -5,8 +5,6 @@ on:
     branches:
       - main
       - master
-    paths:
-      - 'html_extractor/**'
   workflow_dispatch:
 
 jobs:
