@@ -87,6 +87,7 @@ jobs:
             --name html_extractor_faculty_scrapping \
             -p 8000:8000 \
             --ulimit nofile=65536:65536 \
+            --ulimit nproc=4096:4096 \
             -e REDIS_HOST="$REDIS_HOST" \
             -e REDIS_PORT="6379" \
             -e REDIS_DB="0" \
