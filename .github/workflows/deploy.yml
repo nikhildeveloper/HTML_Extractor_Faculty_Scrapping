@@ -110,7 +110,7 @@ jobs:
 
       - name: Check container health
         run: |
-          echo "🏥 Checking container health..."
+          echo "🏥 Checking container health ..."
           sleep 5
           if docker ps | grep -q html_extractor_faculty_scrapping; then
             echo "✅ Container is running"
