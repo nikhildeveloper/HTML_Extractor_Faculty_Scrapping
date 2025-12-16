@@ -59,7 +59,7 @@ def sanitize_filename(url, max_length=200):
 
 
 def extract_links_from_html(html, base_url, selector=None):
-    """Extract all links (URL and link text) from HTML  just"""
+    """Extract all links (URL and link text) from HTML """
     soup = BeautifulSoup(html, 'html.parser')
     
     # Apply selector if provided
