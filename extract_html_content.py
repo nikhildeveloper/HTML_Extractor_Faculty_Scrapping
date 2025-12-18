@@ -2,7 +2,7 @@
 """
 HTML Content Extractor
 Extracts complete HTML text content from URLs, handles dynamic JS loading,
-and saves to text files. Supports single pages and multi-page extraction.
+and saves to text files. Supports single pages and multi-page extractions.
 """
 
 import os
